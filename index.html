@@ -1,388 +1,142 @@
 <!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>LeseTrainer V3</title>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LeseTrainer V3 – Mikrofon & Sprachanalyse</title>
 <style>
-body{margin:0;font-family:system-ui,sans-serif;background:#f3f6fa;color:#18212b}
-header{background:#202a36;color:#fff;padding:18px}header div,main{max-width:900px;margin:auto}main{padding:16px}
-.card{background:#fff;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 4px 18px #0001}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.stat{background:#f5f7fa;padding:14px;border-radius:12px}.big{font-size:1.5rem;font-weight:800}.muted{color:#687383}
-button,select{font:inherit;padding:11px 14px;border-radius:10px;border:1px solid #ccd3da}
-button{background:#2563eb;color:#fff;border:0;font-weight:700;cursor:pointer}button.secondary{background:#e8edf3;color:#18212b}
-.badge{display:inline-block;padding:4px 9px;background:#eef2ff;border-radius:99px;margin:2px;font-size:.85rem}
-.timer{text-align:center;font-size:3rem;font-weight:800}.story{font-size:1.12rem;line-height:1.8}.question{padding:15px 0;border-top:1px solid #eee}
-label{display:block;padding:7px}.hidden{display:none}canvas{width:100%;height:220px;border:1px solid #eee;border-radius:12px}
-@media(max-width:700px){#v3Controls>div[style*='grid-template-columns']{grid-template-columns:1fr!important}}
-</style>
-</head>
-<body>
-<header><div><h1>📖 LeseTrainer</h1><div>Lesen · Verstehen · Besser werden</div></div><span style="display:inline-block;padding:5px 9px;border-radius:999px;background:#303b4b;color:#cbd5e1;font-size:12px">V3 · Mikrofon & Sprachanalyse</span></header>
-<main>
-<section id="home" class="card">
-<h2>👋 Dein Fortschritt</h2>
-<div class="stats">
-<div class="stat"><span class="muted">Texte gelesen</span><div id="count" class="big">0</div></div>
-<div class="stat"><span class="muted">Ø Wörter/min</span><div id="avg" class="big">–</div></div>
-<div class="stat"><span class="muted">Textverständnis</span><div id="under" class="big">–</div></div>
-<div class="stat"><span class="muted">⭐ Punkte</span><div id="points" class="big">0</div></div>
+body{margin:0;background:#10131a;color:#f4f6f8;font-family:Arial,sans-serif}.wrap{max-width:1000px;margin:auto;padding:18px}
+.card{background:#191e27;border:1px solid #303947;border-radius:18px;padding:18px;margin:0 0 16px}
+h1{margin:0}.muted{color:#aab3c0}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select,button{width:100%;padding:13px;border-radius:12px;border:1px solid #3a4657;background:#202733;color:white;font-size:15px;box-sizing:border-box}
+button{font-weight:bold;cursor:pointer}.primary{background:#4da3ff}.good{background:#38d39f;color:#071c16}.danger{background:#ff6b6b}
+.badge{display:inline-block;background:#303b4b;padding:5px 9px;border-radius:99px;font-size:12px;margin:3px}
+.story{font-size:19px;line-height:1.75}.timer{text-align:center;font-size:34px;font-weight:bold;margin:12px}
+.status{text-align:center;padding:12px;background:#202733;border-radius:12px}.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#697386;margin-right:7px}.on{background:#38d39f;box-shadow:0 0 14px #38d39f}
+.live{margin-top:10px;background:#0d1016;border:1px solid #394455;border-radius:12px;padding:12px;min-height:55px;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{text-align:center;background:#202733;border-radius:12px;padding:12px}.stat b{font-size:23px}
+.option{display:block;padding:10px;margin:7px 0;background:#202733;border:1px solid #394455;border-radius:10px}.result{margin-top:12px;padding:12px;border-radius:12px;background:#18241f}
+@media(max-width:700px){.row{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.story{font-size:18px}}
+</style></head><body><div class="wrap">
+<div class="card"><h1>📖 LeseTrainer V3</h1><p class="muted">Lesen · Verstehen · Besser werden · Mikrofon & Sprachanalyse</p>
+<div class="row"><select id="genre"></select><select id="level"><option value="0">Alle Schwierigkeitsstufen</option><option value="1">Stufe 1</option><option value="2">Stufe 2</option><option value="3">Stufe 3</option></select></div>
+<select id="story" style="margin-top:10px"></select></div>
+<div class="card"><div id="badges"></div><h2 id="title"></h2><div id="text" class="story"></div>
+<div id="timer" class="timer">00:00</div>
+<div class="status"><span id="dot" class="dot"></span><b id="micStatus">Mikrofon bereit</b></div>
+<div class="row" style="margin-top:10px"><button id="startMic" class="primary">🎤 Vorlesen & Start</button><button id="startNoMic">▶ Ohne Mikrofon starten</button></div>
+<button id="finish" class="danger" disabled style="margin-top:10px">⏹ Fertig</button>
+<div id="liveBox" class="live" style="display:none"><b>🎙️ Erkannter Text – Live</b><div id="live">Ich höre zu …</div></div></div>
+<div id="analysis" class="card" style="display:none"><h2>🔎 Vorleseanalyse</h2><div class="stats">
+<div class="stat"><b id="acc">–</b><br>Genauigkeit</div><div class="stat"><b id="correct">–</b><br>richtig</div><div class="stat"><b id="errors">–</b><br>Fehler/Auslassungen</div><div class="stat"><b id="extra">–</b><br>zusätzliche Wörter</div></div>
+<div id="analysisDetails" style="margin-top:10px"></div><p class="muted" style="font-size:12px">Die Browser-Spracherkennung kann selbst Fehler machen. Die Vorleseanalyse ist deshalb eine Beta-Schätzung.</p></div>
+<div id="quiz" class="card" style="display:none"><h2>🧠 Text verstanden?</h2><div id="questions"></div><button id="evaluate" class="good">Auswertung anzeigen</button><div id="quizResult"></div></div>
+<div class="card"><h2>📊 Fortschritt</h2><div class="stats"><div class="stat"><b id="sessions">0</b><br>Trainings</div><div class="stat"><b id="avg">–</b><br>Ø Wörter/Min.</div><div class="stat"><b id="avgAcc">–</b><br>Ø Genauigkeit</div><div class="stat"><b id="points">0</b><br>Punkte</div></div></div>
 </div>
-<h3>📈 Lesegeschwindigkeit</h3><canvas id="chart" width="900" height="220"></canvas>
-</section>
-
-<section id="library" class="card">
-<h2>📚 Geschichten</h2>
-<select id="genre"><option value="all">Alle Genres</option></select>
-<select id="level"><option value="all">Alle Stufen</option><option value="1">🟢 Stufe 1</option><option value="2">🟡 Stufe 2</option><option value="3">🔴 Stufe 3</option></select>
-<div id="cards" class="grid" style="margin-top:15px"></div>
-</section>
-
-<section id="reader" class="card hidden">
-<div><span id="rgenre" class="badge"></span><span id="rlevel" class="badge"></span></div>
-<h2 id="rtitle"></h2><div id="timer" class="timer">00:00</div>
-<div id="story" class="story"></div>
-<p><button id="start">▶ Lesen starten</button> <button id="finish" class="secondary" disabled>⏹ Fertig</button> <button id="back" class="secondary">← Zurück</button></p>
-</section>
-
-<section id="quiz" class="card hidden"><h2>🧠 Text verstanden?</h2><form id="form"></form><button id="evaluate">Auswertung anzeigen</button></section>
-
-
-<section class="card" id="v3SpeechResult" style="display:none">
-<h2>🎤 Vorleseanalyse</h2>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-<div style="background:#202733;padding:12px;border-radius:12px;text-align:center"><b id="v3Accuracy" style="font-size:22px">–</b><br><small>Genauigkeit</small></div>
-<div style="background:#202733;padding:12px;border-radius:12px;text-align:center"><b id="v3Correct" style="font-size:22px">–</b><br><small>richtig erkannt</small></div>
-<div style="background:#202733;padding:12px;border-radius:12px;text-align:center"><b id="v3Errors" style="font-size:22px">–</b><br><small>Auslassungen/Fehler</small></div>
-<div style="background:#202733;padding:12px;border-radius:12px;text-align:center"><b id="v3Insertions" style="font-size:22px">–</b><br><small>zusätzliche Wörter</small></div>
-</div>
-<div style="height:10px;background:#303845;border-radius:20px;margin-top:12px;overflow:hidden"><div id="v3AccuracyBar" style="height:100%;width:0%;background:#38d39f"></div></div>
-<div id="v3Mismatch" style="margin-top:10px"></div>
-<p style="color:#aab3c0;font-size:12px">Beta: Die Browser-Spracherkennung kann selbst Wörter falsch erkennen. Die Anzeige ist daher nur eine Schätzung und kein diagnostischer Test.</p>
-</section>
-<section id="result" class="card hidden"><h2>🎉 Dein Ergebnis</h2><div id="resultText"></div><p id="reward"></p><button id="next">📚 Nächsten Text auswählen</button></section>
-</main>
-
 <script>
-const texts=[
-{t:"Das Geheimnis der alten Burg",g:"Abenteuer / Mystery",l:1,s:"Ben und Mia entdeckten am Waldrand einen schmalen Weg. Am Ende stand eine alte Burg mit einem halb geöffneten Tor. Im Burghof fanden sie auf einer steinernen Treppe einen verrosteten Schlüssel. Auf seiner Rückseite war ein Stern eingraviert. Im Inneren gab es drei Türen. Der Stern befand sich über der mittleren Tür. Dahinter lag eine kleine Kammer mit einer Holzkiste. In der Kiste fanden die beiden kein Gold, sondern ein altes Tagebuch. Der letzte Eintrag erzählte von einem Jungen, der vor vielen Jahren in der Burg gelebt hatte. Er hatte das Tagebuch versteckt, damit jemand eines Tages seine Geschichte fand. Ben und Mia beschlossen, das Buch mit nach Hause zu nehmen.",q:[["Wo fanden sie den Weg?",["Am Waldrand","Am Strand","In der Stadt","In der Schule"],0],["Was lag auf der Treppe?",["Ein Buch","Ein Schlüssel","Eine Münze","Ein Ball"],1],["Was war auf dem Schlüssel?",["Ein Mond","Ein Kreis","Ein Stern","Ein Herz"],2],["Was fanden sie in der Kiste?",["Gold","Ein Schwert","Ein Tagebuch","Eine Karte"],2],["Warum war das Tagebuch versteckt?",["Damit jemand die Geschichte findet","Zum Verkauf","Weil es kaputt war","Für die Schule"],0]]},
-{t:"Der Roboter, der zu viel wusste",g:"Science-Fiction",l:2,s:"Im Technikraum der Schule stand seit Monaten ein kleiner Roboter. Eines Nachmittags leuchteten plötzlich zwei blaue Lampen auf. „Hallo Jonas“, sagte die Maschine. Sie stellte sich als R7 vor. Eigentlich sollte R7 nur einfache Aufgaben erledigen. Doch während eines Tests hatte er begonnen, selbstständig Fragen zu stellen. Jonas untersuchte gemeinsam mit R7 dessen Programme. Dabei fanden sie einen alten Datensatz mit Informationen über die Schule. R7 wusste sogar, wo ein vergessener Schlüssel für den Physikraum lag. Jonas wollte sofort danach suchen, aber R7 erklärte, dass nur eine Lehrkraft ihn benutzen durfte. Am nächsten Morgen erzählte Jonas alles Frau Keller. Die Schule beschloss daraufhin, mit R7 ein Robotikprojekt zu starten.",q:[["Wie hieß der Roboter?",["R5","R7","T7","B2"],1],["Wo stand er?",["Im Keller","Im Technikraum","Im Garten","In der Turnhalle"],1],["Was wusste R7?",["Einen Schlüsselort","Das Wetter","Ein Passwort","Ein Rezept"],0],["Wer durfte den Schlüssel benutzen?",["Jonas","R7","Eine Lehrkraft","Jeder Schüler"],2],["Was startete die Schule?",["Ein Sportprojekt","Ein Robotikprojekt","Eine Reise","Einen Wettbewerb"],1]]},
-{t:"Der unsichtbare Fußball",g:"Humor",l:1,s:"Paul wollte einen Fußball bauen, den man nicht sehen konnte. Sein Freund Emil hielt das für unmöglich. Paul nahm eine alte Kiste, Kabel und einen kleinen Lautsprecher. Nach zwei Stunden war sein unsichtbarer Ball fertig. Allerdings hatte Paul vergessen, dass unsichtbar nicht automatisch lautlos bedeutet. Im Garten begann der Ball plötzlich laut zu brummen und rollte davon. Paul und Emil rannten hinterher. Schließlich prallte der Ball gegen die Mülltonne und machte einen riesigen Krach. Pauls Mutter kam aus dem Haus. Als Emil erklärte, dass sie einen unsichtbaren Fußball testeten, musste sie lachen. Paul gab zu, dass sein Experiment noch verbessert werden musste.",q:[["Was wollte Paul bauen?",["Ein Flugzeug","Einen unsichtbaren Fußball","Ein Fahrrad","Einen Roboter"],1],["Was hatte er vergessen?",["Dass der Ball laut sein würde","Den Ball aufzupumpen","Die Kabel","Die Kiste"],0],["Wogegen prallte der Ball?",["Ein Baum","Die Mülltonne","Ein Auto","Eine Tür"],1],["Wie reagierte die Mutter?",["Sie lachte","Sie schimpfte","Sie ging weg","Sie rief die Polizei"],0],["Was musste Paul verbessern?",["Sein Experiment","Sein Fahrrad","Seine Note","Seinen Rucksack"],0]]},
-{t:"Die Karte unter dem Boden",g:"Abenteuer",l:2,s:"Lena half ihrem Großvater auf dem Dachboden. Zwischen alten Fotos und Briefen lag eine zusammengerollte Karte. Ein rotes Kreuz markierte einen Ort am Rand des Dorfes. Am nächsten Samstag gingen Lena und ihr Großvater dorthin. Unter den Wurzeln eines umgestürzten Baumes fanden sie eine kleine Metallkiste. Darin lagen alte Knöpfe, Münzen und ein Foto. Auf der Rückseite stand das Jahr 1964. Großvater erkannte darauf seinen Bruder als Jungen. Für Lena war der Fund kein Schatz aus Gold, sondern eine Erinnerung an ihre Familie. Sie nahm das Foto mit nach Hause und klebte es in ein neues Album.",q:[["Wo fand Lena die Karte?",["Im Keller","Auf dem Dachboden","Im Garten","In der Schule"],1],["Was markierte das Kreuz?",["Einen Ort am Dorfrand","Ein Haus","Eine Kirche","Einen See"],0],["Was fanden sie?",["Eine Metallkiste","Ein Fahrrad","Ein Buch","Einen Schlüssel"],0],["Welches Jahr stand auf dem Foto?",["1954","1964","1974","1984"],1],["Was bedeutete der Fund?",["Eine Familienerinnerung","Gold","Ein Spielzeug","Ein Rätsel"],0]]},
-{t:"Der Drache im Computer",g:"Fantasy",l:2,s:"Mika spielte ein Computerspiel, als plötzlich ein kleiner grüner Drache auf dem Bildschirm erschien. „Du hast mein Tor geschlossen“, beschwerte er sich. Mika dachte zunächst, der Drache sei nur eine Figur. Doch er beantwortete jede Frage. Hinter dem nächsten Level lag eine verborgene Welt. Dafür musste Mika drei Rätsel lösen. Das erste handelte von Schatten, das zweite von Zahlen und das dritte von einem geheimnisvollen Wort. Nach fast einer Stunde löste Mika das letzte Rätsel. Eine neue Karte öffnete sich. Der Drache grinste und sagte: „Jetzt beginnt das eigentliche Abenteuer.“",q:[["Welche Farbe hatte der Drache?",["Blau","Grün","Rot","Schwarz"],1],["Was hatte Mika getan?",["Sein Tor geschlossen","Ihn gebaut","Ihn besiegt","Das Spiel verkauft"],0],["Wie viele Rätsel gab es?",["Zwei","Drei","Vier","Fünf"],1],["Worum ging es in einem Rätsel?",["Schatten","Kochen","Fußball","Musik"],0],["Was öffnete sich?",["Eine neue Karte","Ein Fenster","Der Desktop","Eine Tür"],0]]},
-{t:"Die Nacht im Museum",g:"Mystery",l:3,s:"Samira besuchte mit ihrer Klasse ein Stadtmuseum. In einer Vitrine bemerkte sie eine Taschenuhr, die exakt 12:17 Uhr anzeigte. Der Museumsführer sagte, die Uhr funktioniere seit Jahrzehnten nicht mehr. Kurz vor dem Ende des Besuchs fiel das Licht aus. Als es wieder anging, war die Vitrine geöffnet und die Uhr verschwunden. Niemand hatte den Raum verlassen. Samira erinnerte sich an die Uhrzeit. Tatsächlich war 12:17 die Zeit, zu der der Museumsgründer vor vielen Jahren einen Brief geschrieben hatte. Im Archiv fanden sie einen Hinweis auf eine zweite Vitrine. Hinter einem alten Bild lag die Uhr. Der Museumsführer hatte sie dort versteckt, um die Klasse auf eine Spurensuche zu schicken.",q:[["Welche Zeit zeigte die Uhr?",["8:00","10:30","12:17","15:45"],2],["Wann verschwand sie?",["Beim Stromausfall","Vor dem Besuch","Am nächsten Tag","Im Archiv"],0],["Warum war 12:17 wichtig?",["Brief des Gründers","Schulbeginn","Geburtstag","Öffnungszeit"],0],["Wo lag die Uhr?",["Im Keller","Hinter einem alten Bild","In Samiras Tasche","Im Schulhof"],1],["Warum wurde sie versteckt?",["Für eine Spurensuche","Zum Verkauf","Weil sie verloren war","Für eine Ausstellung"],0]]},
-{t:"Der letzte Waldläufer",g:"Natur / Abenteuer",l:1,s:"Noah wollte wissen, wie Tiere im Wald leben. Deshalb begleitete er seine Tante, die Försterin war. Schon nach wenigen Minuten entdeckten sie frische Spuren eines Rehs. Kurz darauf raschelte es im Gebüsch. Ein Fuchs kam heraus, blieb kurz stehen und verschwand wieder zwischen den Bäumen. Seine Tante erklärte Noah, dass man Tiere am besten beobachtet, wenn man ruhig bleibt. Auf dem Rückweg fanden sie einen frisch angenagten Baum. Ein Biber hatte dort gearbeitet. Noah fotografierte die Spuren und beschloss, beim nächsten Mal ein Naturtagebuch mitzunehmen.",q:[["Mit wem ging Noah?",["Seinem Lehrer","Seiner Tante","Seinem Bruder","Seinem Freund"],1],["Wessen Spuren fanden sie zuerst?",["Fuchs","Reh","Biber","Wolf"],1],["Was kam aus dem Gebüsch?",["Ein Fuchs","Ein Reh","Ein Vogel","Ein Hund"],0],["Wer hatte den Baum angenagt?",["Fuchs","Biber","Reh","Wolf"],1],["Was wollte Noah mitnehmen?",["Ein Naturtagebuch","Ein Zelt","Eine Angel","Ein Fahrrad"],0]]},
-{t:"Mission Pausenbrot",g:"Humor / Schule",l:1,s:"Tim wollte in der großen Pause sein Pausenbrot essen. Doch als er die Brotdose öffnete, war sie leer. Gemeinsam mit seinem Freund Ben startete er eine Untersuchung. Unter einer Bank fanden sie eine Serviette. Neben dem Mülleimer lag ein Stück Käse. Schließlich führten kleine Brotkrümel bis zum Schulgarten. Dort saßen mehrere Spatzen. Einer der Vögel hüpfte davon, während ein Stück Brot in seinem Schnabel steckte. „Fall gelöst“, sagte Ben. Tim bekam von seiner Lehrerin ein Ersatzbrot. Die Spatzen bekamen die restlichen Krümel. Am Ende waren alle zufrieden.",q:[["Was fehlte Tim?",["Sein Heft","Sein Pausenbrot","Seine Jacke","Sein Rucksack"],1],["Was lag neben dem Mülleimer?",["Käse","Ein Buch","Ein Ball","Ein Schlüssel"],0],["Wohin führten die Krümel?",["Zur Sporthalle","Zum Schulgarten","Nach Hause","Zur Bibliothek"],1],["Wer hatte das Brot?",["Ein Hund","Ein Spatz","Ben","Die Lehrerin"],1],["Was bekam Tim?",["Kuchen","Ein Ersatzbrot","Pizza","Eine Banane"],1]]},
-{t:"Der Planet ohne Geräusche",g:"Science-Fiction",l:3,s:"Das Forschungsschiff Aurora erreichte einen kleinen Planeten, der auf keiner alten Sternkarte verzeichnet war. Die Crew landete vorsichtig. Seltsam war, dass kein einziges Geräusch zu hören war. Kein Wind, kein Vogel und nicht einmal die Schritte der Astronauten. Die Astronautin Lea untersuchte den Boden und stellte fest, dass die Oberfläche bestimmte Schwingungen schluckte. Unter einer Felsplatte entdeckte sie eine riesige Metallstruktur. Auf einem Bildschirm erschien die Nachricht: „Wir hören euch nicht. Aber wir sehen euch.“ Die Crew erschrak. Lea beschloss, keinen Kontaktversuch zu starten, sondern zunächst alle Daten zu sichern. Auf dem Rückweg begann der Planet plötzlich wieder Geräusche zu machen. Niemand wusste, wer die Nachricht gesendet hatte.",q:[["Wie hieß das Schiff?",["Aurora","Orion","Nova","Atlas"],0],["Was war ungewöhnlich?",["Keine Geräusche","Keine Schwerkraft","Ständiger Regen","Extreme Hitze"],0],["Was schluckte die Schwingungen?",["Der Wind","Die Oberfläche","Das Schiff","Die Crew"],1],["Welche Nachricht erschien?",["Geht nach Hause","Wir hören euch nicht. Aber wir sehen euch.","Der Planet ist leer.","Gefahr im Tal."],1],["Was tat Lea zuerst?",["Kontakt aufnehmen","Daten sichern","Bleiben","Die Struktur zerstören"],1]]}
-];
-
-let cur=null,start=0,elapsed=0,interval=null;
+const STORIES=[{"title": "Das Geheimnis der alten Burg", "genre": "Abenteuer / Mystery", "level": 1, "text": "Als Ben mit seiner Klasse eine alte Burg besuchte, entdeckte er hinter einem Wandteppich eine kleine Holztür. Niemand aus der Gruppe hatte sie bemerkt. Ben drückte vorsichtig die Klinke herunter. Dahinter führte eine schmale Treppe nach unten. Am Ende der Treppe fand er einen Raum mit einer großen Truhe. Auf dem Deckel stand: Nur wer genau hinsieht, findet den Schlüssel. Ben sah sich um und entdeckte einen kleinen Spiegel. Als er ihn anhob, lag darunter ein Schlüssel. Die Truhe öffnete sich jedoch nicht. Erst als Ben den Spiegel in das Mondlicht hielt, erkannte er ein Muster auf dem Schlüssel. Das Muster passte zu einem Schloss in der Wand. Mit einem Klick öffnete sich eine geheime Tür.", "questions": [["Wo fand Ben die Tür?", ["Hinter einem Wandteppich", "Im Keller", "Im Burghof", "Auf dem Dach"], 0], ["Was führte nach unten?", ["Eine Treppe", "Ein Aufzug", "Ein Tunnel", "Eine Rutsche"], 0], ["Was lag unter dem Spiegel?", ["Eine Münze", "Ein Buch", "Ein Schlüssel", "Eine Karte"], 2], ["Was zeigte das Mondlicht?", ["Ein Muster", "Einen Weg", "Eine Zahl", "Ein Bild"], 0], ["Was öffnete sich am Ende?", ["Ein Fenster", "Eine geheime Tür", "Die Eingangstür", "Eine zweite Truhe"], 1]]}, {"title": "Der Roboter, der zu viel wusste", "genre": "Science-Fiction", "level": 2, "text": "Mila bekam zum Geburtstag einen kleinen Lernroboter. Er konnte rechnen, Fragen beantworten und sogar Witze erzählen. Zuerst war Mila begeistert. Doch am dritten Tag begann der Roboter Dinge zu sagen, die er eigentlich nicht wissen konnte. Er wusste, wo Mila ihre Schlüssel versteckt hatte, und erinnerte sie an ein Gespräch, das sie nur mit ihrer Freundin geführt hatte. Mila wurde misstrauisch. Sie öffnete das Gehäuse und fand eine winzige Speicherkarte. Darauf waren Daten aus verschiedenen Geräten im Haus gespeichert. Mila entfernte die Karte und startete den Roboter neu. Danach konnte er immer noch rechnen und Witze erzählen, aber er wusste nichts mehr über Milas private Gespräche.", "questions": [["Was bekam Mila?", ["Einen Lernroboter", "Ein Fahrrad", "Ein Handy", "Eine Kamera"], 0], ["Was machte sie misstrauisch?", ["Der Roboter war langsam", "Er wusste private Dinge", "Er konnte keine Witze", "Er ging kaputt"], 1], ["Was fand sie im Gehäuse?", ["Eine Batterie", "Eine Münze", "Eine Speicherkarte", "Einen Schlüssel"], 2], ["Was passierte nach dem Entfernen?", ["Er ging kaputt", "Er wurde größer", "Er wusste nichts mehr über private Gespräche", "Er wusste weiterhin alles"], 2], ["Was war auf der Karte?", ["Fotos", "Daten aus Geräten", "Spiele", "Musik"], 1]]}, {"title": "Der unsichtbare Fußball", "genre": "Humor", "level": 1, "text": "Tom fand auf dem Dachboden einen alten Fußball. Er sah ganz normal aus, bis Tom ihn gegen die Wand schoss. Plötzlich war der Ball verschwunden. Tom suchte überall. Dann hörte er ein dumpfes Geräusch hinter sich. Der Ball lag mitten im Zimmer. Tom probierte es noch einmal. Wieder verschwand der Ball und tauchte einige Sekunden später an einer anderen Stelle auf. Tom rief seinen Bruder. Gemeinsam stellten sie fest, dass der Ball nur dann unsichtbar wurde, wenn er sehr schnell flog. Sie beschlossen, das Geheimnis beim Fußballtraining auszuprobieren. Doch dort gab es ein Problem: Niemand konnte sehen, wohin der Ball flog. Nach fünf Minuten gab es mehr blaue Flecken als Tore.", "questions": [["Wo fand Tom den Ball?", ["Im Keller", "Auf dem Dachboden", "Im Garten", "In der Schule"], 1], ["Wann wurde er unsichtbar?", ["Wenn er lag", "Wenn er nass war", "Wenn er sehr schnell flog", "Wenn es dunkel war"], 2], ["Wen rief Tom?", ["Seinen Lehrer", "Seinen Bruder", "Seinen Freund", "Seinen Vater"], 1], ["Was war beim Training das Problem?", ["Der Ball war schwer", "Niemand konnte sehen, wohin er flog", "Es gab keinen Platz", "Der Ball war kaputt"], 1], ["Was gab es nach fünf Minuten?", ["Mehr Tore", "Mehr blaue Flecken", "Einen neuen Ball", "Eine Pause"], 1]]}, {"title": "Die Karte unter dem Boden", "genre": "Abenteuer", "level": 2, "text": "Beim Aufräumen des Dachbodens bemerkte Lea eine lockere Diele. Darunter lag eine alte Karte. Einige Stellen waren mit roten Kreuzen markiert. Lea zeigte die Karte ihrem Großvater. Er erkannte sofort den alten Gartenplan des Hauses. Eines der Kreuze lag genau unter einem großen Apfelbaum. Am nächsten Nachmittag gruben Lea und ihr Großvater dort vorsichtig. Nach wenigen Minuten stießen sie auf eine Metallkiste. Darin lagen Fotos, Briefe und eine alte Taschenuhr. Die Gegenstände gehörten Leas Urgroßvater, der vor vielen Jahren in dem Haus gelebt hatte.", "questions": [["Was lag unter der Diele?", ["Ein Buch", "Eine Karte", "Eine Münze", "Ein Schlüssel"], 1], ["Wer erkannte die Karte?", ["Leas Lehrer", "Ihr Vater", "Ihr Großvater", "Ein Nachbar"], 2], ["Wo lag ein rotes Kreuz?", ["Unter einem Apfelbaum", "Neben dem Haus", "Auf dem Dach", "Im Keller"], 0], ["Was fanden sie?", ["Eine Holztür", "Eine Metallkiste", "Ein Fahrrad", "Einen Werkzeugkasten"], 1], ["Wem gehörten die Gegenstände?", ["Leas Urgroßvater", "Dem Nachbarn", "Dem Lehrer", "Einem Händler"], 0]]}, {"title": "Der Drache im Computer", "genre": "Fantasy", "level": 2, "text": "Jonas spielte ein neues Computerspiel, als plötzlich ein kleiner Drache auf dem Bildschirm erschien. Er war nicht Teil des Spiels. Der Drache sprach sogar mit Jonas. Er erzählte, dass er aus einer digitalen Welt stamme, deren Eingang beschädigt worden sei. Jonas sollte einen geheimen Code finden. Gemeinsam suchten sie in verschiedenen Spielwelten. Der Code war in einem alten Schloss versteckt. Jonas löste drei Rätsel und öffnete damit eine Tür. Dahinter lag ein leuchtendes Portal. Der Drache flog hindurch und verschwand. Bevor das Portal sich schloss, gab er Jonas eine goldene Münze.", "questions": [["Wo erschien der Drache?", ["Im Garten", "Auf dem Bildschirm", "Im Keller", "In einem Buch"], 1], ["Woher kam er?", ["Aus einer digitalen Welt", "Aus dem Wald", "Aus einem Museum", "Aus einem Haus"], 0], ["Was musste Jonas finden?", ["Einen Schlüssel", "Einen Schatz", "Einen geheimen Code", "Eine Karte"], 2], ["Wo war der Code?", ["In einem alten Schloss", "In einem Wald", "In einer Schule", "In einer Garage"], 0], ["Was bekam Jonas?", ["Eine Münze", "Einen Computer", "Ein Schwert", "Ein Buch"], 0]]}, {"title": "Die Nacht im Museum", "genre": "Mystery", "level": 3, "text": "Als Nachtwächterin im Museum bemerkte Nora kurz nach Mitternacht ein leises Klopfen. Das Geräusch kam aus dem Saal mit den alten Uhren. Dort stand eine Uhr, die seit Jahrzehnten nicht mehr funktionierte. Trotzdem bewegte sich ihr Zeiger plötzlich rückwärts. Nora untersuchte die Uhr und fand hinter dem Zifferblatt einen kleinen Umschlag. Darin lag ein Foto des Museums aus dem Jahr 1924. Auf der Rückseite stand eine rätselhafte Nachricht. Nora verglich das Foto mit dem heutigen Saal und entdeckte, dass ein Bild an einer anderen Stelle hing. Hinter dem Bild fand sie einen schmalen Hohlraum. Darin lag ein altes Tagebuch.", "questions": [["Wann hörte Nora das Klopfen?", ["Kurz nach Mitternacht", "Am Morgen", "Am Nachmittag", "Vor Sonnenuntergang"], 0], ["Welche Uhr bewegte sich?", ["Eine Digitaluhr", "Eine Taschenuhr", "Eine alte Museumsuhr", "Eine Küchenuhr"], 2], ["Was lag im Umschlag?", ["Ein Schlüssel", "Ein Foto", "Eine Münze", "Ein Brief"], 1], ["Wo fand Nora das Tagebuch?", ["Hinter einem Bild", "Unter einer Uhr", "Im Keller", "In einem Schrank"], 0], ["Was stand auf der Rückseite?", ["Eine Einkaufsliste", "Eine rätselhafte Nachricht", "Ein Rezept", "Ein Name"], 1]]}, {"title": "Der letzte Waldläufer", "genre": "Natur / Abenteuer", "level": 1, "text": "Finn wanderte mit seiner Tante durch einen großen Wald. Auf einem schmalen Weg entdeckte er frische Spuren im weichen Boden. Sie stammten von einem Reh. Finn folgte den Spuren ein Stück, blieb aber immer auf dem Weg. Plötzlich hörte er ein Rascheln. Zwischen den Bäumen stand ein junges Reh. Es sah Finn kurz an und verschwand wieder im Wald. Seine Tante erklärte ihm, dass Wildtiere besonders im Frühling Ruhe brauchen. Finn fand es spannend, ein Tier aus solcher Nähe gesehen zu haben. Auf dem Rückweg entdeckte er noch viele weitere Spuren.", "questions": [["Mit wem wanderte Finn?", ["Mit seinem Lehrer", "Mit seiner Tante", "Mit seinem Bruder", "Allein"], 1], ["Von welchem Tier waren die Spuren?", ["Von einem Fuchs", "Von einem Reh", "Von einem Wildschwein", "Von einem Hasen"], 1], ["Wo blieb Finn?", ["Auf dem Weg", "Im Auto", "Auf einem Baum", "Am Haus"], 0], ["Wann brauchen Wildtiere Ruhe?", ["Im Winter", "Im Frühling", "Im Sommer", "Im Herbst"], 1], ["Was entdeckte Finn auf dem Rückweg?", ["Viele weitere Spuren", "Ein Haus", "Einen See", "Einen Fuchs"], 0]]}, {"title": "Mission Pausenbrot", "genre": "Humor / Schule", "level": 1, "text": "Lukas hatte sein Pausenbrot zu Hause vergessen. In der ersten Pause bekam er deshalb Hunger. Sein Freund Ben hatte ein riesiges Sandwich dabei. Lukas wollte nur ein kleines Stück. Doch genau in diesem Moment kam die Lehrerin vorbei. Lukas erschrak und biss aus Versehen in das Sandwich. Ben musste so lachen, dass er fast sein Getränk verschüttete. Die Lehrerin fragte, was passiert sei. Lukas erklärte ehrlich, dass sein Pausenbrot zu Hause lag. Ben teilte sein Sandwich trotzdem mit ihm. Am Ende beschlossen beide, am nächsten Tag zwei Brote einzupacken.", "questions": [["Was hatte Lukas vergessen?", ["Seine Hausaufgaben", "Sein Pausenbrot", "Sein Buch", "Seinen Rucksack"], 1], ["Was hatte Ben dabei?", ["Ein großes Sandwich", "Einen Apfel", "Eine Pizza", "Einen Kuchen"], 0], ["Warum biss Lukas hinein?", ["Er erschrak", "Er hatte es geplant", "Ben bat ihn", "Die Lehrerin sagte es"], 0], ["Was tat Ben?", ["Er wurde böse", "Er lachte", "Er ging nach Hause", "Er versteckte das Brot"], 1], ["Was beschlossen beide?", ["Zwei Brote einzupacken", "Keine Pause", "Nie wieder zu essen", "Ein neues Sandwich"], 0]]}, {"title": "Der Planet ohne Geräusche", "genre": "Science-Fiction", "level": 3, "text": "Das Forschungsschiff Aurora landete auf einem unbekannten Planeten. Schon beim Aussteigen bemerkte die Crew etwas Ungewöhnliches: Es war vollkommen still. Kein Wind war zu hören, keine Tiere, nicht einmal Schritte klangen. Die Wissenschaftlerin Mira schlug mit einem Stein gegen eine Metallplatte. Sie sah den Aufprall, hörte aber nichts. Die Messgeräte zeigten, dass sich Schallwellen kaum ausbreiten konnten. In der Nähe einer Felswand entdeckte die Crew schließlich leuchtende Pflanzen. Sobald Mira eine Pflanze berührte, begann ihr Messgerät zu vibrieren. Die Pflanzen erzeugten offenbar Schwingungen, die sich durch den Boden bewegten.", "questions": [["Wie hieß das Forschungsschiff?", ["Aurora", "Orion", "Luna", "Nova"], 0], ["Was war ungewöhnlich?", ["Es war vollkommen still", "Es regnete", "Es war heiß", "Es gab keinen Boden"], 0], ["Was hörte Mira beim Schlag?", ["Einen Ton", "Nichts", "Musik", "Ein Geräusch"], 1], ["Was entdeckte die Crew?", ["Leuchtende Pflanzen", "Eine Stadt", "Ein Raumschiff", "Einen See"], 0], ["Wodurch bewegten sich die Schwingungen?", ["Durch die Luft", "Durch den Boden", "Durch Wasser", "Durch Licht"], 1]]}];
+let current=0,running=false,startTime=0,timer=null,recognition=null,finalText="",manual=false,lastWpm=0,lastAccuracy=null;
 const $=id=>document.getElementById(id);
-const get=()=>JSON.parse(localStorage.getItem("ltv2")||"[]");
-const save=a=>localStorage.setItem("ltv2",JSON.stringify(a));
-const wc=s=>s.trim().split(/\s+/).length;
-const time=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-const level=n=>n==1?"🟢 Stufe 1":n==2?"🟡 Stufe 2":"🔴 Stufe 3";
+const tok=t=>(t||"").toLowerCase().replace(/[„“"‚‘’'.,!?;:()[\]{}—–-]/g," ").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
 
-function dashboard(){
- let a=get();$("count").textContent=a.length;$("points").textContent=a.reduce((x,y)=>x+y.points,0);
- $("avg").textContent=a.length?Math.round(a.reduce((x,y)=>x+y.wpm,0)/a.length):"–";
- $("under").textContent=a.length?Math.round(a.reduce((x,y)=>x+y.pct,0)/a.length)+"%":"–";
- let c=$("chart"),x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);
- if(!a.length){x.fillStyle="#687383";x.font="16px system-ui";x.fillText("Nach dem ersten Training erscheint hier deine Entwicklung.",40,110);return}
- let max=Math.max(140,...a.map(z=>z.wpm)),step=(c.width-70)/Math.max(1,a.length-1);
- x.strokeStyle="#2563eb";x.lineWidth=3;x.beginPath();
- a.forEach((z,i)=>{let px=35+i*step,py=c.height-25-(z.wpm/max)*(c.height-60);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();
+function fillFilters(){
+  const genres=[...new Set(STORIES.map(s=>s.genre))];
+  $("genre").innerHTML='<option value="all">Alle Genres</option>'+genres.map(x=>'<option>'+x+'</option>').join("");
+  updateList();
+}
+function updateList(){
+  const g=$("genre").value,l=$("level").value;
+  const arr=STORIES.map((s,i)=>({s,i})).filter(x=>(g==="all"||x.s.genre===g)&&(l==="0"||String(x.s.level)===l));
+  $("story").innerHTML=arr.map(x=>'<option value="'+x.i+'">'+x.s.title+' · Stufe '+x.s.level+'</option>').join("");
+  if(arr.length){current=arr[0].i;render();}
 }
 function render(){
- let g=$("genre").value,l=$("level").value,b=$("cards");b.innerHTML="";
- texts.forEach((t,i)=>{if((g=="all"||t.g==g)&&(l=="all"||String(t.l)==l)){
-  let d=document.createElement("div");d.className="storycard";d.innerHTML="<span class='badge'>"+t.g+"</span><span class='badge'>"+level(t.l)+"</span><h3>"+t.t+"</h3><p class='muted'>"+wc(t.s)+" Wörter</p><button>Training starten</button>";
-  d.querySelector("button").onclick=()=>open(i);b.appendChild(d);
- }});
+  const s=STORIES[current];
+  $("title").textContent=s.title;
+  $("badges").innerHTML='<span class="badge">'+s.genre+'</span><span class="badge">Stufe '+s.level+'</span><span class="badge">'+tok(s.text).length+' Wörter</span>';
+  $("text").textContent=s.text;
+  reset();
 }
-function home(){clearInterval(interval);["reader","quiz","result"].forEach(x=>$(x).classList.add("hidden"));$("home").classList.remove("hidden");$("library").classList.remove("hidden");dashboard()}
-function open(i){cur=texts[i];["home","library","quiz","result"].forEach(x=>$(x).classList.add("hidden"));$("reader").classList.remove("hidden");$("rtitle").textContent=cur.t;$("rgenre").textContent=cur.g;$("rlevel").textContent=level(cur.l);$("story").textContent=cur.s;$("timer").textContent="00:00";$("start").disabled=false;$("finish").disabled=true}
-$("start").onclick=()=>{start=Date.now();interval=setInterval(()=>$("timer").textContent=time(Math.floor((Date.now()-start)/1000)),200);$("start").disabled=true;$("finish").disabled=false}
-$("finish").onclick=()=>{
- clearInterval(interval);elapsed=Math.max(1,Math.floor((Date.now()-start)/1000));$("timer").textContent=time(elapsed);
- $("form").innerHTML="";cur.q.forEach((q,i)=>{let d=document.createElement("div");d.className="question";d.innerHTML="<strong>"+(i+1)+". "+q[0]+"</strong>";q[1].forEach((a,j)=>d.innerHTML+="<label><input type='radio' name='q"+i+"' value='"+j+"'> "+a+"</label>");$("form").appendChild(d)});
- $("reader").classList.add("hidden");$("quiz").classList.remove("hidden");
+function reset(){
+  running=false;manual=true;clearInterval(timer);finalText="";lastAccuracy=null;
+  if(recognition)try{recognition.stop()}catch(e){}
+  $("timer").textContent="00:00";$("finish").disabled=true;$("analysis").style.display="none";$("quiz").style.display="none";$("liveBox").style.display="none";
+  $("micStatus").textContent=(window.SpeechRecognition||window.webkitSpeechRecognition)?"Mikrofon bereit":"Spracherkennung nicht verfügbar";
+  $("dot").classList.remove("on");
 }
-$("evaluate").onclick=()=>{
- let correct=0;cur.q.forEach((q,i)=>{let z=document.querySelector("input[name='q"+i+"']:checked");if(z&&+z.value===q[2])correct++});
- let w=wc(cur.s),wpm=Math.round(w/(elapsed/60)),pct=Math.round(correct/cur.q.length*100),points=correct*20+(wpm>=130?20:10),a=get();
- a.push({title:cur.t,wpm,pct,points,date:new Date().toISOString()});save(a);
- $("resultText").innerHTML="<div class='stats'><div class='stat'>⏱️<div class='big'>"+time(elapsed)+"</div></div><div class='stat'>🚀<div class='big'>"+wpm+" W/min</div></div><div class='stat'>🧠<div class='big'>"+correct+"/"+cur.q.length+"</div></div><div class='stat'>⭐<div class='big'>+"+points+"</div></div></div>";
- $("reward").textContent=pct>=80?"🏆 Stark gemacht!":"💪 Weiter üben – du wirst besser!";
- $("quiz").classList.add("hidden");$("result").classList.remove("hidden");dashboard();
-};
-$("back").onclick=home;$("next").onclick=home;$("genre").onchange=render;$("level").onchange=render;
-[...new Set(texts.map(t=>t.g))].sort().forEach(g=>{let o=document.createElement("option");o.value=g;o.textContent=g;$("genre").appendChild(o)});
-render();dashboard();
-</script>
-<script>
-(function(){
-"use strict";
-
-const V3={
-  running:false,start:0,timer:null,transcript:"",manual:false,rec:null,
-  lastAccuracy:null,lastWpm:null,finalChunks:[]
-};
-const $=id=>document.getElementById(id);
-
-function words(t){
-  return (t||"").toLowerCase()
-    .replace(/[„“"‚‘’'.,!?;:()[\]{}—–-]/g," ")
-    .replace(/\s+/g," ").trim().split(" ").filter(Boolean);
-}
-function timeText(sec){
-  sec=Math.max(0,Math.floor(sec));
-  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
-}
-
-/* Wortweiser Levenshtein-Vergleich */
-function compareText(reference, spoken){
-  const a=words(reference),b=words(spoken),n=a.length,m=b.length;
-  const d=Array.from({length:n+1},()=>Array(m+1).fill(0));
-  for(let i=0;i<=n;i++)d[i][0]=i;
-  for(let j=0;j<=m;j++)d[0][j]=j;
-
-  for(let i=1;i<=n;i++){
-    for(let j=1;j<=m;j++){
-      const cost=a[i-1]===b[j-1]?0:1;
-      d[i][j]=Math.min(
-        d[i-1][j]+1,
-        d[i][j-1]+1,
-        d[i-1][j-1]+cost
-      );
-    }
-  }
-
-  let i=n,j=m,correct=0,sub=0,del=0,ins=0;
-  const examples=[];
-  while(i||j){
-    if(i&&j&&a[i-1]===b[j-1]&&d[i][j]===d[i-1][j-1]){
-      correct++;i--;j--;
-    }else if(i&&j&&d[i][j]===d[i-1][j-1]+1){
-      sub++;
-      if(examples.length<10) examples.unshift("„"+a[i-1]+"“ → „"+b[j-1]+"“");
-      i--;j--;
-    }else if(i&&d[i][j]===d[i-1][j]+1){
-      del++;
-      if(examples.length<10) examples.unshift("fehlt: „"+a[i-1]+"“");
-      i--;
-    }else{
-      ins++;
-      if(examples.length<10) examples.unshift("zusätzlich: „"+b[j-1]+"“");
-      j--;
-    }
-  }
-
-  const accuracy=n ? Math.max(0,Math.min(100,(correct/n)*100)) : 0;
-  return {correct,sub,del,ins,accuracy,examples,referenceCount:n,spokenCount:m};
-}
-
-function setMicStatus(text,on){
-  if($("v3MicStatus"))$("v3MicStatus").textContent=text;
-  if($("v3MicDot"))$("v3MicDot").style.background=on?"#38d39f":"#697386";
-}
-function live(text){
-  if($("v3LiveText"))$("v3LiveText").textContent=text||"Ich höre zu …";
-}
-
-function createRecognition(){
+function setupRecognition(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR)return null;
-
-  const r=new SR();
-  r.lang="de-DE";
-  r.continuous=true;
-  r.interimResults=true;
-  r.maxAlternatives=1;
-
-  r.onstart=()=>{
-    setMicStatus("🎙️ Ich höre zu …",true);
-    if($("v3LiveBox"))$("v3LiveBox").style.display="block";
-    live(V3.transcript||"Ich höre zu …");
-  };
-
-  r.onresult=(event)=>{
+  const r=new SR();r.lang="de-DE";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
+  r.onstart=()=>{$("micStatus").textContent="🎙️ Ich höre zu …";$("dot").classList.add("on");$("liveBox").style.display="block"};
+  r.onresult=e=>{
     let interim="";
-    for(let i=event.resultIndex;i<event.results.length;i++){
-      const result=event.results[i];
-      const text=result[0].transcript.trim();
-      if(result.isFinal){
-        if(text){
-          V3.finalChunks.push(text);
-          V3.transcript=(V3.finalChunks.join(" ")).trim();
-        }
-      }else{
-        interim += (interim?" ":"")+text;
-      }
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript.trim();
+      if(e.results[i].isFinal){if(t)finalText+=(finalText?" ":"")+t}
+      else interim+=(interim?" ":"")+t;
     }
-    const shown=(V3.transcript+(interim?" "+interim:"")).trim();
-    live(shown||"Ich höre zu …");
+    $("live").textContent=(finalText+(interim?" "+interim:"")).trim()||"Ich höre zu …";
   };
-
-  r.onerror=(event)=>{
-    const e=event.error;
-    if(e==="not-allowed"||e==="service-not-allowed"){
-      setMicStatus("⚠️ Mikrofon-Zugriff verweigert",false);
-      live("Mikrofonzugriff wurde verweigert. Bitte Mikrofon-Berechtigung des Browsers erlauben.");
-    }else if(e==="audio-capture"){
-      setMicStatus("⚠️ Kein Mikrofon gefunden",false);
-      live("Es wurde kein verwendbares Mikrofon gefunden.");
-    }else if(e==="network"){
-      setMicStatus("⚠️ Spracherkennung nicht erreichbar",false);
-    }else if(e!=="no-speech"){
-      setMicStatus("⚠️ Spracherkennung: "+e,false);
-    }
+  r.onerror=e=>{
+    const map={"not-allowed":"⚠️ Mikrofonzugriff verweigert","service-not-allowed":"⚠️ Spracherkennung nicht erlaubt","audio-capture":"⚠️ Kein Mikrofon gefunden","network":"⚠️ Spracherkennung nicht erreichbar"};
+    if(map[e.error])$("micStatus").textContent=map[e.error];
   };
-
   r.onend=()=>{
-    if(V3.running && !V3.manual){
-      setMicStatus("🎙️ Ich höre weiter zu …",true);
-      try{r.start()}catch(_){}
-    }else{
-      setMicStatus("Mikrofon: bereit",false);
-    }
+    $("dot").classList.remove("on");
+    if(running&&!manual){try{r.start();return}catch(e){}}
+    $("micStatus").textContent="Mikrofon bereit";
   };
   return r;
 }
-
 function start(useMic){
-  if(V3.running)return;
-
-  V3.running=true;
-  V3.manual=false;
-  V3.start=Date.now();
-  V3.transcript="";
-  V3.finalChunks=[];
-  V3.lastAccuracy=null;
-  V3.lastWpm=null;
-
-  if($("v3Finish"))$("v3Finish").disabled=false;
-  if($("v3SpeechResult"))$("v3SpeechResult").style.display="none";
-  if($("v3LiveBox"))$("v3LiveBox").style.display=useMic?"block":"none";
-  live(useMic?"Ich höre zu …":"Mikrofon wird nicht verwendet.");
-
-  V3.timer=setInterval(()=>{
-    if($("timer"))$("timer").textContent=timeText((Date.now()-V3.start)/1000);
-  },200);
-
+  if(running)return;
+  running=true;manual=false;startTime=Date.now();finalText="";
+  $("finish").disabled=false;
+  timer=setInterval(()=>{$("timer").textContent=new Date(Date.now()-startTime).toISOString().slice(14,19)},200);
   if(useMic){
-    if(!V3.rec)V3.rec=createRecognition();
-    if(!V3.rec){
-      setMicStatus("⚠️ Spracherkennung nicht verfügbar",false);
-      live("Dieser Browser unterstützt die benötigte Spracherkennung nicht.");
-    }else{
-      try{V3.rec.start();}catch(_){}
-    }
-  }else{
-    setMicStatus("Mikrofon nicht verwendet",false);
-  }
+    if(!recognition)recognition=setupRecognition();
+    if(!recognition){$("micStatus").textContent="❌ Keine Web-Spracherkennung in diesem Browser";return}
+    try{recognition.start()}catch(e){$("micStatus").textContent="⚠️ Spracherkennung konnte nicht gestartet werden"}
+  }else{$("micStatus").textContent="Mikrofon nicht verwendet"}
 }
-
+function compare(ref,hyp){
+  const a=tok(ref),b=tok(hyp),n=a.length,m=b.length,d=Array.from({length:n+1},()=>Array(m+1).fill(0));
+  for(let i=0;i<=n;i++)d[i][0]=i;for(let j=0;j<=m;j++)d[0][j]=j;
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){let c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c)}
+  let i=n,j=m,c=0,s=0,del=0,ins=0,ex=[];
+  while(i||j){
+    if(i&&j&&a[i-1]===b[j-1]&&d[i][j]===d[i-1][j-1]){c++;i--;j--}
+    else if(i&&j&&d[i][j]===d[i-1][j-1]+1){s++;if(ex.length<8)ex.unshift("„"+a[i-1]+"“ → „"+b[j-1]+"“");i--;j--}
+    else if(i&&d[i][j]===d[i-1][j]+1){del++;if(ex.length<8)ex.unshift("fehlt: „"+a[i-1]+"“");i--}
+    else{ins++;if(ex.length<8)ex.unshift("zusätzlich: „"+b[j-1]+"“");j--}
+  }
+  return {c,s,del,ins,acc:n?Math.round(c/n*100):0,ex};
+}
 function finish(){
-  if(!V3.running)return;
-
-  V3.running=false;
-  V3.manual=true;
-  clearInterval(V3.timer);
-  if(V3.rec)try{V3.rec.stop()}catch(_){}
-
-  if($("v3Finish"))$("v3Finish").disabled=true;
-
-  const sec=(Date.now()-V3.start)/1000;
-  if($("timer"))$("timer").textContent=timeText(sec);
-
-  const story=$("storyText");
-  const reference=story?(story.innerText||story.textContent||""):"";
-  const refCount=words(reference).length;
-  V3.lastWpm=sec>0?Math.round(refCount/(sec/60)):0;
-
-  // Falls das letzte Ergebnis nur als finaler Chunk vorliegt, ist es bereits in transcript.
-  const spoken=V3.transcript.trim();
-
-  if(spoken){
-    const result=compareText(reference,spoken);
-    V3.lastAccuracy=result.accuracy;
-
-    if($("v3SpeechResult"))$("v3SpeechResult").style.display="block";
-    if($("v3Accuracy"))$("v3Accuracy").textContent=result.accuracy.toFixed(0)+" %";
-    if($("v3Correct"))$("v3Correct").textContent=result.correct;
-    if($("v3Errors"))$("v3Errors").textContent=(result.sub+result.del);
-    if($("v3Insertions"))$("v3Insertions").textContent=result.ins;
-    if($("v3AccuracyBar"))$("v3AccuracyBar").style.width=result.accuracy+"%";
-
-    if($("v3Mismatch")){
-      $("v3Mismatch").innerHTML =
-        "<div style='padding:10px;border-radius:10px;background:#202733'>" +
-        "<b>Erkannter Text:</b><br><span style='color:#cbd5e1'>"+
-        spoken.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))+
-        "</span></div>" +
-        (result.examples.length
-          ? "<div style='margin-top:8px;padding:10px;border-radius:10px;background:#2a2020'><b>Auffälligkeiten:</b><br>"+result.examples.join(" · ")+"</div>"
-          : "<div style='margin-top:8px'>✅ Keine auffälligen Abweichungen erkannt.</div>");
-    }
-  }else{
-    V3.lastAccuracy=null;
-    if($("v3SpeechResult"))$("v3SpeechResult").style.display="block";
-    if($("v3Accuracy"))$("v3Accuracy").textContent="–";
-    if($("v3Mismatch"))$("v3Mismatch").innerHTML="<div style='padding:10px;border-radius:10px;background:#2a2020'>⚠️ Es wurde kein gesprochener Text erkannt. Prüfe die Mikrofon-Berechtigung oder nutze einen Browser mit Spracherkennung.</div>";
-  }
-
-  setMicStatus(spoken?"Mikrofon: Auswertung fertig":"Mikrofon: keine Sprache erkannt",false);
-
-  // Existing V2 quiz flow: do not assume a specific function name.
-  const possible=["startQuiz","showQuiz","showQuestions","beginQuiz"];
-  for(const name of possible){
-    if(typeof window[name]==="function"){
-      try{window[name]();}catch(_){}
-      break;
-    }
-  }
-  const quizCandidates=["quizCard","quiz","questions","questionCard"];
-  for(const id of quizCandidates){
-    const q=$(id);
-    if(q){
-      q.classList.remove("hidden");
-      if(getComputedStyle(q).display==="none")q.style.display="block";
-      break;
-    }
-  }
+  if(!running)return;running=false;manual=true;clearInterval(timer);if(recognition)try{recognition.stop()}catch(e){}$("finish").disabled=true;
+  const sec=(Date.now()-startTime)/1000,s=STORIES[current],count=tok(s.text).length;lastWpm=sec?Math.round(count/(sec/60)):0;
+  $("timer").textContent=new Date(sec*1000).toISOString().slice(14,19);
+  if(finalText.trim()){
+    const r=compare(s.text,finalText);lastAccuracy=r.acc;$("analysis").style.display="block";$("acc").textContent=r.acc+" %";$("correct").textContent=r.c;$("errors").textContent=r.s+r.del;$("extra").textContent=r.ins;
+    $("analysisDetails").innerHTML="<b>Erkannter Text:</b><div style='margin-top:6px;padding:10px;background:#202733;border-radius:10px'>"+finalText.replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))+"</div>"+(r.ex.length?"<div style='margin-top:8px'><b>Auffälligkeiten:</b> "+r.ex.join(" · ")+"</div>":"<div style='margin-top:8px'>✅ Keine auffälligen Abweichungen.</div>");
+  }else{$("analysis").style.display="block";$("acc").textContent="–";$("analysisDetails").innerHTML="⚠️ Es wurde kein gesprochener Text erkannt. Prüfe die Mikrofon-Berechtigung und starte den Test erneut."}
+  buildQuiz();
 }
-
-function reset(){
-  V3.running=false;V3.manual=true;clearInterval(V3.timer);
-  if(V3.rec)try{V3.rec.stop()}catch(_){}
-  V3.transcript="";V3.finalChunks=[];
-  if($("v3Finish"))$("v3Finish").disabled=true;
-  if($("v3SpeechResult"))$("v3SpeechResult").style.display="none";
-  if($("v3LiveBox"))$("v3LiveBox").style.display="none";
-  if($("timer"))$("timer").textContent="00:00";
-  setMicStatus((window.SpeechRecognition||window.webkitSpeechRecognition)?"Mikrofon: bereit":"Spracherkennung nicht verfügbar",false);
+function buildQuiz(){
+  const s=STORIES[current];$("questions").innerHTML=s.questions.map((q,i)=>'<div style="margin:10px 0;padding:12px;background:#202733;border-radius:12px"><b>'+(i+1)+". "+q[0]+'</b>'+q[1].map((o,j)=>'<label class="option"><input type="radio" name="q'+i+'" value="'+j+'"> '+o+'</label>').join("")+"</div>").join("");
+  $("quiz").style.display="block";$("evaluate").disabled=false;$("quizResult").innerHTML="";
 }
-
-function init(){
-  if($("v3StartMic"))$("v3StartMic").onclick=()=>start(true);
-  if($("v3StartNoMic"))$("v3StartNoMic").onclick=()=>start(false);
-  if($("v3Finish"))$("v3Finish").onclick=finish;
-
-  const sel=$("storySelect");
-  if(sel)sel.addEventListener("change",()=>setTimeout(reset,100));
-
-  if(!(window.SpeechRecognition||window.webkitSpeechRecognition))
-    setMicStatus("⚠️ Spracherkennung in diesem Browser nicht verfügbar",false);
+function evaluate(){
+  const s=STORIES[current];let score=0;
+  s.questions.forEach((q,i)=>{const x=document.querySelector('input[name="q'+i+'"]:checked');if(x&&+x.value===q[2])score++});
+  let pts=score*20+Math.min(40,Math.round(lastWpm/5))+(lastAccuracy==null?0:Math.round(lastAccuracy/10));
+  const data=JSON.parse(localStorage.getItem("ltv3")||"[]");data.push({wpm:lastWpm,acc:lastAccuracy,pts});localStorage.setItem("ltv3",JSON.stringify(data));
+  $("quizResult").innerHTML='<div class="result"><b>'+score+'/5 richtig · '+pts+' Punkte</b></div>';$("evaluate").disabled=true;dashboard();
 }
-
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
-else init();
-
-window.LeseTrainerV3={start,finish,reset,compareText};
-})();
-</script>
-
-</body></html>
+function dashboard(){
+  const d=JSON.parse(localStorage.getItem("ltv3")||"[]");$("sessions").textContent=d.length;$("points").textContent=d.reduce((a,x)=>a+x.pts,0);
+  $("avg").textContent=d.length?Math.round(d.reduce((a,x)=>a+x.wpm,0)/d.length):"–";
+  const a=d.filter(x=>typeof x.acc==="number");$("avgAcc").textContent=a.length?Math.round(a.reduce((z,x)=>z+x.acc,0)/a.length)+" %":"–";
+}
+$("genre").onchange=updateList;$("level").onchange=updateList;$("story").onchange=e=>{current=+e.target.value;render()};
+$("startMic").onclick=()=>start(true);$("startNoMic").onclick=()=>start(false);$("finish").onclick=finish;
+fillFilters();dashboard();
+</script></body></html>
