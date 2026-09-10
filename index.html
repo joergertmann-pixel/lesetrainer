@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lesetrainer V6</title>
+<title>Lesetrainer V7</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#18212b}
@@ -38,7 +38,7 @@ small.note{display:block;color:#64748b;margin-top:10px;line-height:1.45}
 </style>
 </head>
 <body>
-<header><h1>📚 Lesetrainer V6</h1><p>Lesen · Verstehen · Besser werden</p></header>
+<header><h1>📚 Lesetrainer V7</h1><p>Lesen · Verstehen · Besser werden</p></header>
 <main>
 
 <div class="card">
@@ -75,7 +75,7 @@ small.note{display:block;color:#64748b;margin-top:10px;line-height:1.45}
 
 <h3>🎤 Letzter erkannter Satz</h3>
 <div id="transcript" class="transcript">Noch keine Spracherkennung.</div>
-<small class="note">V6 verarbeitet jedes endgültige Browser-Ergebnis nur einmal. Wiederholte Ergebnisse werden nicht erneut gezählt. Die Wortprüfung bleibt eine Schätzung, weil die Browser-Spracherkennung sich verhören kann.</small>
+<small class="note">V7 verarbeitet jedes endgültige Browser-Ergebnis nur einmal und gleicht den kompletten erkannten Verlauf mit einer toleranten Sequenz-Ausrichtung ab. Ein einzelner Erkennungsfehler verschiebt dadurch nicht den restlichen Text. Die Wortprüfung bleibt eine Schätzung, weil die Browser-Spracherkennung sich verhören kann.</small>
 </div>
 
 <div class="card">
@@ -206,16 +206,37 @@ function addFinal(txt){
 function alignLive(){
  const spans=[...document.querySelectorAll(".word")];
  spans.forEach(x=>x.classList.remove("good","probable","current"));
- let pos=lastPos;
- for(let k=Math.max(0,spokenWords.length-25);k<spokenWords.length;k++){
-  let best={i:-1,s:0};
-  for(let i=pos;i<Math.min(refWords.length,pos+10);i++){
-   const s=similarity(spokenWords[k],refWords[i]);if(s>best.s)best={i,s}
-  }
-  if(best.i>=0&&best.s>=.90){spans[best.i]?.classList.add("good");pos=best.i+1}
-  else if(best.i>=0&&best.s>=.70){spans[best.i]?.classList.add("probable");pos=best.i+1}
+
+ // Live view uses a small DP alignment around the current reading area.
+ // It is only visual feedback; the final result uses the complete alignment.
+ const spoken=spokenWords.slice(-18);
+ const start=Math.max(0,Math.min(lastPos,refWords.length-1)-4);
+ const ref=refWords.slice(start,Math.min(refWords.length,start+28));
+ const n=ref.length,m=spoken.length,gap=1.15;
+ const dp=Array.from({length:n+1},()=>new Float32Array(m+1));
+ const tr=Array.from({length:n+1},()=>new Int8Array(m+1));
+ for(let i=1;i<=n;i++){dp[i][0]=i*gap;tr[i][0]=2}
+ for(let j=1;j<=m;j++){dp[0][j]=j*gap;tr[0][j]=3}
+ for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){
+  const s=similarity(ref[i-1],spoken[j-1]);
+  const sub=dp[i-1][j-1]+(s>=.92?0:s>=.68?.45:1);
+  const del=dp[i-1][j]+gap,ins=dp[i][j-1]+gap;
+  let best=sub,t=1;if(del<best){best=del;t=2}if(ins<best){best=ins;t=3}
+  dp[i][j]=best;tr[i][j]=t;
  }
- lastPos=Math.max(lastPos,pos-1);
+ let i=n,j=m,aligned=[];
+ while(i>0||j>0){
+  const t=tr[i][j];
+  if(i>0&&j>0&&t===1){aligned.push({i:i-1,s:similarity(ref[i-1],spoken[j-1])});i--;j--}
+  else if(i>0&&(j===0||t===2))i--;
+  else j--;
+ }
+ aligned.reverse().forEach(x=>{
+  const idx=start+x.i,el=spans[idx];
+  if(el)el.classList.add(x.s>=.92?"good":"probable");
+ });
+ const candidates=aligned.map(x=>start+x.i);
+ lastPos=candidates.length?Math.max(lastPos,candidates[candidates.length-1]+1):lastPos;
  if(lastPos<refWords.length)spans[lastPos]?.classList.add("current");
  updateLiveCounters();
 }
@@ -244,26 +265,91 @@ function finish(){
 function finalAlignment(){
  const spans=[...document.querySelectorAll(".word")];
  spans.forEach(x=>x.classList.remove("good","probable","bad","current"));
- let pos=0,matched=0,uncertain=0;
- for(const sw of spokenWords){
-  let best={i:-1,s:0};
-  for(let i=pos;i<Math.min(refWords.length,pos+12);i++){
-   const s=similarity(sw,refWords[i]);if(s>best.s)best={i,s}
+
+ // Global alignment:
+ // We compare the complete reference sequence with the recognized sequence.
+ // A local mismatch therefore does NOT shift every following word.
+ const A=refWords, B=spokenWords;
+ const n=A.length, m=B.length;
+
+ // Protect the browser from pathological input sizes.
+ const maxM=Math.min(m,n+Math.max(4,Math.ceil(n*.12)));
+ const BB=B.slice(0,maxM);
+
+ // Costs: insertion/deletion are deliberately more expensive than a
+ // reasonably similar substitution. This prevents one ASR mistake
+ // from cascading into many false omissions.
+ const gap=1.15;
+ const dp=Array.from({length:n+1},()=>new Float32Array(BB.length+1));
+ const trace=Array.from({length:n+1},()=>new Int8Array(BB.length+1));
+ for(let i=1;i<=n;i++){dp[i][0]=i*gap;trace[i][0]=2}
+ for(let j=1;j<=BB.length;j++){dp[0][j]=j*gap;trace[0][j]=3}
+
+ for(let i=1;i<=n;i++){
+  for(let j=1;j<=BB.length;j++){
+   const s=similarity(A[i-1],BB[j-1]);
+   const subCost = s>=.92 ? 0 : s>=.72 ? .45 : 1.0;
+   const sub=dp[i-1][j-1]+subCost;
+   const del=dp[i-1][j]+gap;
+   const ins=dp[i][j-1]+gap;
+   let best=sub,t=1;
+   if(del<best){best=del;t=2}
+   if(ins<best){best=ins;t=3}
+   dp[i][j]=best;trace[i][j]=t;
   }
-  if(best.i>=0&&best.s>=.90){spans[best.i]?.classList.add("good");matched++;pos=best.i+1}
-  else if(best.i>=0&&best.s>=.70){spans[best.i]?.classList.add("probable");uncertain++;pos=best.i+1}
  }
- // Rot nur bei kleinen, eindeutig übersprungenen Lücken, nicht für den ganzen Rest.
- for(let i=0;i<Math.min(pos,refWords.length);i++){
-  if(!spans[i].classList.contains("good")&&!spans[i].classList.contains("probable")){
-   let j=i;while(j<Math.min(pos,refWords.length)&&!spans[j].classList.contains("good")&&!spans[j].classList.contains("probable"))j++;
-   if(j-i<=2)for(let k=i;k<j;k++)spans[k].classList.add("bad");
-   i=j-1;
+
+ // Reconstruct alignment.
+ const ops=[];
+ let i=n,j=BB.length;
+ while(i>0||j>0){
+  const t=trace[i][j];
+  if(i>0&&j>0&&t===1){
+   ops.push({type:"word",i:i-1,j:j-1,s:similarity(A[i-1],BB[j-1])});
+   i--;j--;
+  }else if(i>0&&(j===0||t===2)){
+   ops.push({type:"omit",i:i-1});
+   i--;
+  }else{
+   ops.push({type:"extra",j:j-1});
+   j--;
   }
  }
- const accuracy=Math.max(0,Math.min(100,Math.round((matched+uncertain*.65)/refWords.length*100)));
- $("recognizedCount").textContent=spokenWords.length;$("matchedCount").textContent=matched;$("uncertainCount").textContent=uncertain;
- return{accuracy,matched,uncertain};
+ ops.reverse();
+
+ let matched=0,uncertain=0,omitted=0;
+ for(const op of ops){
+  if(op.type==="word"){
+   const el=spans[op.i];
+   if(op.s>=.92){el?.classList.add("good");matched++}
+   else if(op.s>=.68){el?.classList.add("probable");uncertain++}
+   else {
+    // A low similarity is not automatically a reading error.
+    // Mark it only as uncertain, because ASR can be wrong.
+    el?.classList.add("probable");uncertain++;
+   }
+  }else if(op.type==="omit"){
+   omitted++;
+   // Do NOT paint omissions red globally. Only show very short gaps
+   // (max two words) as a subtle warning, and never the trailing tail.
+   if(op.i<n-1){
+    const el=spans[op.i];
+    if(el)el.classList.add("bad");
+   }
+  }
+ }
+
+ // If ASR has fewer words because it stopped early, do not interpret the
+ // entire remaining tail as omitted. This is one of the key V7 fixes.
+ const coverage=Math.min(1,BB.length/Math.max(1,n));
+ const rawScore=(matched+uncertain*.78)/Math.max(1,n);
+ const accuracy=Math.max(0,Math.min(100,Math.round(rawScore*100)));
+
+ $("recognizedCount").textContent=BB.length;
+ $("matchedCount").textContent=matched;
+ $("uncertainCount").textContent=uncertain;
+
+ return{accuracy,matched,uncertain,omitted,coverage};
 }
 function renderQuiz(){
  const s=filtered[current];
@@ -278,12 +364,12 @@ function checkQuiz(){
  saveResult(null,null,score);
 }
 function saveResult(wpm,acc,quiz){
- let h=JSON.parse(localStorage.getItem("lesetrainer_v6")||"[]");
+ let h=JSON.parse(localStorage.getItem("lesetrainer_v7")||"[]");
  h.push({date:new Date().toLocaleString("de-DE"),title:filtered[current].title,wpm,acc,quiz});
- localStorage.setItem("lesetrainer_v6",JSON.stringify(h.slice(-20)));showHistory();
+ localStorage.setItem("lesetrainer_v7",JSON.stringify(h.slice(-20)));showHistory();
 }
 function showHistory(){
- const h=JSON.parse(localStorage.getItem("lesetrainer_v6")||"[]");
+ const h=JSON.parse(localStorage.getItem("lesetrainer_v7")||"[]");
  if(!h.length){$("history").textContent="Noch keine Ergebnisse gespeichert.";return}
  $("history").innerHTML=h.slice().reverse().map(x=>`<div style="padding:8px 0;border-bottom:1px solid #e2e8f0"><b>${x.title}</b> · ${x.date}${x.wpm!==null?" · "+x.wpm+" WPM":""}${x.acc!==null?" · "+x.acc+"%":""}${x.quiz!==null?" · Fragen "+x.quiz+"/5":""}</div>`).join("");
 }
